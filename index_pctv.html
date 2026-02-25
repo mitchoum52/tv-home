@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>TV Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Orbitron:wght@900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0a0c;
+    --surface:  #111114;
+    --border:   #1e1e24;
+    --accent:   #e8ff47;
+    --accent2:  #47ffe0;
+    --text:     #d0d0da;
+    --text-dim: #44444e;
+    --font-ui:  'DM Mono', monospace;
+    --font-big: 'Syne', sans-serif;
+    --font-clock: 'Orbitron', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    opacity: .025;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+    z-index: 1;
+  }
+
+  .wrapper {
+    position: relative; z-index: 1;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    padding: 40px;
+  }
+
+  .clock-block { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+  #clock {
+    font-family: var(--font-clock);
+    font-size: clamp(60px, 9vw, 108px);
+    font-weight: 900;
+    letter-spacing: .05em;
+    line-height: 1;
+    background: linear-gradient(180deg, #ffffff 60%, #666 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  #date { font-size: 13px; letter-spacing: .2em; color: var(--text-dim); text-transform: uppercase; }
+  .sep  { width: 40px; height: 1px; background: var(--border); }
+
+  .sites {
+    display: flex;
+    gap: 32px; /* Réduit un peu l'espace pour laisser respirer les boutons */
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    max-width: 100%;
+  }
+
+  .btn {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 40px 48px; /* Paddings légèrement ajustés */
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color .2s, transform .15s, box-shadow .2s;
+    /* Empêche le contenu de déborder visuellement de la forme arrondie */
+    overflow: hidden; 
+    min-width: 280px; /* Sécurité minimale */
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(232,255,71,.08) 0%, transparent 70%);
+    opacity: 0; transition: opacity .3s;
+    border-radius: 32px;
+  }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 20%; bottom: 20%;
+    width: 6px;
+    border-radius: 8px;
+    background: var(--accent);
+    opacity: 0; transition: opacity .2s;
+  }
+
+  .btn:hover { border-color: #2e2e38; transform: translateY(-4px); box-shadow: 0 16px 60px rgba(0,0,0,.5); }
+  .btn:hover::before, .btn:hover::after { opacity: 1; }
+
+  .btn-num { font-size: 1.2rem; color: var(--text-dim); letter-spacing: .15em; }
+
+  .btn-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%; /* Important pour que l'icône soit bien à droite */
+    gap: 20px;
+  }
+
+  .btn-name { 
+    font-family: var(--font-big); 
+    font-size: 1.8rem; 
+    font-weight: 700; 
+    color: #fff; 
+    letter-spacing: -.01em;
+    white-space: nowrap;
+    /* Optionnel : si le nom est vraiment trop long malgré tout */
+    overflow: hidden;
+    text-overflow: ellipsis; 
+  }
+
+  .btn-arrow {
+    font-size: 1.5rem; color: var(--text-dim);
+    flex-shrink: 0;
+    transition: color .2s, transform .2s;
+  }
+  .btn:hover .btn-arrow { color: var(--accent); transform: translate(2px, -2px); }
+
+  .btn-edit {
+    position: absolute; top: 15px; right: 15px;
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity .2s, border-color .2s, color .2s;
+    z-index: 2;
+  }
+  .btn:hover .btn-edit { opacity: 1; }
+  .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Les autres styles restent identiques ── */
+  .hint { font-size: 14px; color: var(--text-dim); letter-spacing: .1em; text-align: center; line-height: 2; }
+  #btn-settings {
+    position: fixed; bottom: 28px; right: 32px;
+    width: 64px; height: 64px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--text-dim);
+    font-size: 24px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50;
+    transition: border-color .2s, color .2s, transform .3s;
+  }
+  #btn-settings:hover { border-color: #333; color: var(--accent); transform: rotate(60deg); }
+  #overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(6px); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  #overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: min(560px, 92vw); max-height: 80vh; overflow-y: auto; padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-family: var(--font-big); font-size: 18px; font-weight: 700; color: #fff; }
+  .modal-close { background: transparent; border: none; color: var(--text-dim); font-size: 20px; cursor: pointer; line-height: 1; }
+  .site-list { display: flex; flex-direction: column; gap: 8px; }
+  .site-row { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .site-row-grip { color: var(--text-dim); font-size: 12px; cursor: grab; }
+  .site-row-info { flex: 1; min-width: 0; }
+  .site-row-name { font-family: var(--font-big); font-size: 14px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .site-row-url  { font-size: 10px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .site-row-actions { display: flex; gap: 6px; }
+  .row-btn { width: 28px; height: 28px; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .row-btn.danger:hover { background: #2a1010; color: #ff6b6b; }
+  .form-block { border-top: 1px solid var(--border); padding-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .form-block label { font-size: 10px; text-transform: uppercase; color: var(--text-dim); }
+  .form-block input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; color: var(--text); outline: none; }
+  .form-row { display: flex; gap: 8px; }
+  .form-btn { flex: 1; padding: 10px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); }
+  .form-btn.primary { background: var(--accent); color: var(--bg); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+  <div class="clock-block">
+    <div id="clock">00:00</div>
+    <div id="date">—</div>
+  </div>
+  <div class="sep"></div>
+  <div class="sites" id="sites"></div>
+  <div id="hint"></div>
+</div>
+
+<button id="btn-settings" title="Gérer les sites">⚙</button>
+
+<div id="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Gérer les sites</span>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="site-list" id="site-list"></div>
+    <div class="form-block">
+      <div class="form-title" id="form-title" style="font-size: 11px; color: var(--text-dim); margin-bottom: 8px;">AJOUTER UN SITE</div>
+      <div>
+        <label>Nom affiché</label>
+        <input type="text" id="inp-name" placeholder="Ex : Arte TV" autocomplete="off" />
+      </div>
+      <div style="margin-top: 8px;">
+        <label>URL</label>
+        <input type="url" id="inp-url" placeholder="https://..." autocomplete="off" />
+      </div>
+      <div class="form-row" style="margin-top: 12px;">
+        <button class="form-btn" id="form-cancel">Annuler</button>
+        <button class="form-btn primary" id="form-save">Ajouter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_SITES = [
+  { name: "Flemmix",       url: "https://flemmix.surf/"         },
+  { name: "Xefod",         url: "https://xefod.com/"            },
+  { name: "PapaduStream",  url: "https://papadustream.archi/"   },
+  { name: "French Stream", url: "https://french-stream.one/"    },
+  { name: "YouTube",       url: "https://www.youtube.com/"      },
+];
+
+const STORAGE_KEY = 'tv-dashboard-sites';
+let sites   = [];
+let editIdx = null;
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    sites = raw ? JSON.parse(raw) : [...DEFAULT_SITES];
+  } catch { sites = [...DEFAULT_SITES]; }
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sites));
+}
+
+function tick() {
+  const now    = new Date();
+  const pad    = n => String(n).padStart(2, '0');
+  const days   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  document.getElementById('clock').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('date').textContent  = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+function renderButtons() {
+  const container = document.getElementById('sites');
+  container.innerHTML = '';
+
+  sites.forEach((site, i) => {
+    const a = document.createElement('a');
+    a.className = 'btn';
+    a.innerHTML = `
+      <span class="btn-num">0${i + 1}</span>
+      <div class="btn-name-row">
+        <span class="btn-name">${site.name}</span>
+        <span class="btn-arrow">↗</span>
+      </div>
+      <button class="btn-edit" title="Modifier" data-idx="${i}">✎</button>
+    `;
+    a.addEventListener('click', e => {
+      if (!e.target.closest('.btn-edit')) window.open(site.url, '_blank', 'noopener');
+    });
+    a.querySelector('.btn-edit').addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      openEdit(parseInt(e.currentTarget.dataset.idx));
+    });
+    container.appendChild(a);
+  });
+
+  // Ajustement dynamique pour que tous les boutons aient la même taille basés sur le plus grand contenu
+  requestAnimationFrame(() => {
+    const btns = container.querySelectorAll('.btn');
+    if (btns.length === 0) return;
+
+    btns.forEach(b => { b.style.width = 'auto'; b.style.height = 'auto'; });
+    
+    let maxW = 0, maxH = 0;
+    btns.forEach(b => {
+      // On utilise scrollWidth pour être sûr de capturer le texte qui dépasse
+      maxW = Math.max(maxW, b.offsetWidth, b.scrollWidth);
+      maxH = Math.max(maxH, b.offsetHeight, b.scrollHeight);
+    });
+
+    btns.forEach(b => { 
+      // Ajout d'une petite marge de sécurité de 2px pour éviter les arrondis de calcul navigateurs
+      b.style.width = (maxW + 2) + 'px'; 
+      b.style.height = (maxH + 2) + 'px'; 
+    });
+  });
+}
+
+// ── FONCTIONS DE GESTION (MODALES / LISTE) ──
+function renderList() {
+  const list = document.getElementById('site-list');
+  list.innerHTML = '';
+  sites.forEach((site, i) => {
+    const row = document.createElement('div');
+    row.className = 'site-row';
+    row.innerHTML = `
+      <span class="site-row-grip">⠿</span>
+      <div class="site-row-info">
+        <div class="site-row-name">${site.name}</div>
+        <div class="site-row-url">${site.url}</div>
+      </div>
+      <div class="site-row-actions">
+        <button class="row-btn" data-action="up" data-idx="${i}">↑</button>
+        <button class="row-btn" data-action="down" data-idx="${i}">↓</button>
+        <button class="row-btn" data-action="edit" data-idx="${i}">✎</button>
+        <button class="row-btn danger" data-action="del" data-idx="${i}">✕</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('.row-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      const action = btn.dataset.action;
+      if (action === 'up' && idx > 0) [sites[idx-1], sites[idx]] = [sites[idx], sites[idx-1]];
+      if (action === 'down' && idx < sites.length - 1) [sites[idx], sites[idx+1]] = [sites[idx+1], sites[idx]];
+      if (action === 'del') sites.splice(idx, 1);
+      if (action === 'edit') { openEdit(idx); return; }
+      save(); renderList(); renderButtons();
+    });
+  });
+}
+
+function openEdit(idx) {
+  editIdx = idx;
+  document.getElementById('form-title').textContent = 'Modifier le site';
+  document.getElementById('form-save').textContent  = 'Enregistrer';
+  document.getElementById('inp-name').value = sites[idx].name;
+  document.getElementById('inp-url').value  = sites[idx].url;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('inp-name').focus();
+}
+
+function openAdd() {
+  editIdx = null;
+  document.getElementById('form-title').textContent = 'Ajouter un site';
+  document.getElementById('form-save').textContent  = 'Ajouter';
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-url').value = '';
+}
+
+document.getElementById('form-save').addEventListener('click', () => {
+  const name = document.getElementById('inp-name').value.trim();
+  const url  = document.getElementById('inp-url').value.trim();
+  if (!name || !url) return;
+  if (editIdx !== null) sites[editIdx] = { name, url };
+  else sites.push({ name, url });
+  save(); renderList(); renderButtons(); openAdd();
+});
+
+document.getElementById('form-cancel').addEventListener('click', openAdd);
+document.getElementById('btn-settings').addEventListener('click', () => {
+  renderList();
+  document.getElementById('overlay').classList.add('open');
+});
+document.getElementById('modal-close').addEventListener('click', () => document.getElementById('overlay').classList.remove('open'));
+
+load();
+tick();
+setInterval(tick, 1000);
+renderButtons();
+</script>
+</body>
+</html>
